@@ -1,0 +1,40 @@
+# Whole stack in one command:  docker compose up --build
+# Then open http://localhost:8080
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ticketing
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts in this folder run once, the first time the volume is empty.
+      # Remove the 03 line if you don't want the demo users and tickets.
+      - ./database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./database/03_demo_data.sql:/docker-entrypoint-initdb.d/03_demo_data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketing"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-postgres}@db:5432/ticketing
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-before-deploying-0123456789}
+      FRONTEND_ORIGIN: http://localhost:8080
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

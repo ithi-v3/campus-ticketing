@@ -1,0 +1,21 @@
+# secrets
+.env
+*.pem
+*.key
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# node
+node_modules/
+dist/
+
+# backups and editor noise
+*.dump
+.DS_Store
+.vscode/
+.idea/
